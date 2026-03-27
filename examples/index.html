@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stegano-kit — Live Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f13;
+      color: #e4e4e7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+    h1 {
+      font-size: 1.8rem;
+      background: linear-gradient(135deg, #818cf8, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: .25rem;
+    }
+    .subtitle { color: #71717a; margin-bottom: 2rem; font-size: .95rem; }
+    .card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 1.5rem;
+    }
+    .card h2 { font-size: 1.1rem; margin-bottom: 1rem; color: #a1a1aa; }
+    label { display: block; font-size: .85rem; color: #71717a; margin-bottom: .35rem; }
+    input[type="file"] { margin-bottom: 1rem; }
+    textarea, input[type="text"], input[type="password"] {
+      width: 100%;
+      background: #09090b;
+      border: 1px solid #3f3f46;
+      color: #e4e4e7;
+      border-radius: 8px;
+      padding: .65rem .75rem;
+      font-size: .9rem;
+      margin-bottom: 1rem;
+      resize: vertical;
+    }
+    textarea:focus, input:focus { outline: none; border-color: #818cf8; }
+    button {
+      background: linear-gradient(135deg, #818cf8, #6366f1);
+      color: #fff;
+      border: none;
+      padding: .7rem 1.5rem;
+      border-radius: 8px;
+      font-size: .9rem;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    button:hover { opacity: .85; }
+    button:disabled { opacity: .4; cursor: not-allowed; }
+    .canvas-wrap {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .canvas-wrap div { text-align: center; }
+    .canvas-wrap canvas {
+      max-width: 260px;
+      max-height: 200px;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+    }
+    .canvas-wrap span { display: block; font-size: .75rem; color: #71717a; margin-top: .35rem; }
+    #status {
+      margin-top: .75rem;
+      padding: .5rem .75rem;
+      border-radius: 8px;
+      font-size: .85rem;
+      display: none;
+    }
+    #status.ok { display: block; background: #052e16; color: #4ade80; border: 1px solid #166534; }
+    #status.err { display: block; background: #2c0b0e; color: #f87171; border: 1px solid #7f1d1d; }
+    .cap { font-size: .8rem; color: #a1a1aa; margin-bottom: .75rem; }
+    #decoded-output {
+      background: #09090b;
+      border: 1px solid #3f3f46;
+      border-radius: 8px;
+      padding: .65rem .75rem;
+      min-height: 2.5rem;
+      font-size: .9rem;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>stegano-kit</h1>
+  <p class="subtitle">Hide secret messages inside images — right in your browser</p>
+
+  <!-- ENCODE -->
+  <div class="card">
+    <h2>1 &mdash; Encode</h2>
+
+    <label for="img-input">Choose an image (PNG recommended)</label>
+    <input type="file" id="img-input" accept="image/*" />
+
+    <div id="cap-info" class="cap"></div>
+
+    <label for="secret-input">Secret message</label>
+    <textarea id="secret-input" rows="3" placeholder="Type your secret here..."></textarea>
+
+    <label for="pw-encode">Password (optional)</label>
+    <input type="password" id="pw-encode" placeholder="Leave blank for no encryption" />
+
+    <button id="btn-encode" disabled>Encode &amp; Download PNG</button>
+
+    <div id="status"></div>
+
+    <div class="canvas-wrap">
+      <div><canvas id="cv-original"></canvas><span>Original</span></div>
+      <div><canvas id="cv-encoded"></canvas><span>Encoded</span></div>
+    </div>
+  </div>
+
+  <!-- DECODE -->
+  <div class="card">
+    <h2>2 &mdash; Decode</h2>
+
+    <label for="img-decode">Choose an encoded image</label>
+    <input type="file" id="img-decode" accept="image/*" />
+
+    <label for="pw-decode">Password (if encrypted)</label>
+    <input type="password" id="pw-decode" placeholder="Leave blank if unencrypted" />
+
+    <button id="btn-decode" disabled>Decode</button>
+
+    <label style="margin-top:1rem;">Decoded message</label>
+    <div id="decoded-output"></div>
+  </div>
+
+  <script type="module">
+    import { encode, decode, capacity } from '../dist/index.mjs';
+
+    const $ = (s) => document.querySelector(s);
+
+    let srcImageData = null;
+
+    // ── Encode flow ──
+    $('#img-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const bitmap = await createImageBitmap(file);
+      const cvO = $('#cv-original');
+      cvO.width = bitmap.width;
+      cvO.height = bitmap.height;
+      const ctx = cvO.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0);
+      srcImageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+
+      const cap = capacity(srcImageData);
+      $('#cap-info').textContent = `Image capacity: ${cap.readable} (${cap.width}×${cap.height})`;
+      $('#btn-encode').disabled = false;
+    });
+
+    $('#btn-encode').addEventListener('click', async () => {
+      const msg = $('#secret-input').value;
+      const pw = $('#pw-encode').value || undefined;
+      const status = $('#status');
+
+      try {
+        const opts = pw ? { password: pw } : undefined;
+        const result = await encode(srcImageData, msg, opts);
+
+        const cvE = $('#cv-encoded');
+        cvE.width = result.width;
+        cvE.height = result.height;
+        const ctx = cvE.getContext('2d');
+        const out = new ImageData(new Uint8ClampedArray(result.data), result.width, result.height);
+        ctx.putImageData(out, 0, 0);
+
+        // Trigger download
+        cvE.toBlob((blob) => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'stegano-encoded.png';
+          a.click();
+        }, 'image/png');
+
+        status.className = 'ok';
+        status.textContent = `Encoded ${msg.length} chars into image. PNG downloaded!`;
+      } catch (err) {
+        status.className = 'err';
+        status.textContent = err.message;
+      }
+    });
+
+    // ── Decode flow ──
+    let decImageData = null;
+
+    $('#img-decode').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const bitmap = await createImageBitmap(file);
+      const cv = document.createElement('canvas');
+      cv.width = bitmap.width;
+      cv.height = bitmap.height;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0);
+      decImageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+      $('#btn-decode').disabled = false;
+    });
+
+    $('#btn-decode').addEventListener('click', async () => {
+      const pw = $('#pw-decode').value || undefined;
+      const out = $('#decoded-output');
+
+      try {
+        const opts = pw ? { password: pw } : undefined;
+        const secret = await decode(decImageData, opts);
+        out.textContent = secret;
+        out.style.color = '#4ade80';
+      } catch (err) {
+        out.textContent = err.message;
+        out.style.color = '#f87171';
+      }
+    });
+  </script>
+
+</body>
+</html>

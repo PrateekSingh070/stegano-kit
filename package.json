@@ -1,0 +1,57 @@
+{
+  "name": "stegano-kit",
+  "version": "1.0.0",
+  "description": "Lightweight browser & Node.js steganography library — hide and extract secret messages in images using LSB encoding",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --format cjs --dts --clean",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "steganography",
+    "stego",
+    "lsb",
+    "image",
+    "hide",
+    "secret",
+    "message",
+    "encode",
+    "decode",
+    "canvas",
+    "pixel",
+    "watermark",
+    "covert",
+    "browser",
+    "typescript"
+  ],
+  "author": "Prateek Singh",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrateekSingh070/stegano-kit"
+  },
+  "homepage": "https://github.com/PrateekSingh070/stegano-kit#readme",
+  "bugs": {
+    "url": "https://github.com/PrateekSingh070/stegano-kit/issues"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}
