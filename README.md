@@ -1,5 +1,11 @@
 # stegano-kit
 
+[![CI](https://github.com/PrateekSingh070/stegano-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/PrateekSingh070/stegano-kit/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/stegano-kit.svg)](https://www.npmjs.com/package/stegano-kit)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue.svg)](https://www.typescriptlang.org/)
+[![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](https://www.npmjs.com/package/stegano-kit)
+
 Lightweight, zero-dependency steganography library for the browser and Node.js. Hide secret messages inside images using LSB (Least Significant Bit) encoding, with optional AES-256 encryption.
 
 ```
