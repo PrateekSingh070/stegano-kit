@@ -87,7 +87,7 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey>
     ['deriveKey'],
   );
   return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: 100_000, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt: salt as BufferSource, iterations: 100_000, hash: 'SHA-256' },
     keyMaterial,
     { name: 'AES-GCM', length: 256 },
     false,
@@ -99,7 +99,7 @@ export async function encrypt(data: Uint8Array, password: string): Promise<Uint8
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(password, salt);
-  const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
+  const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data as BufferSource);
   const out = new Uint8Array(salt.length + iv.length + cipher.byteLength);
   out.set(salt, 0);
   out.set(iv, salt.length);
@@ -112,6 +112,6 @@ export async function decrypt(data: Uint8Array, password: string): Promise<Uint8
   const iv = data.slice(16, 28);
   const cipher = data.slice(28);
   const key = await deriveKey(password, salt);
-  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher);
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher as BufferSource);
   return new Uint8Array(plain);
 }
