@@ -145,6 +145,56 @@ Without the correct password, `decode` will throw.
 
 The image looks identical to the naked eye — pixel values change by at most ±1 (with default 1-bit encoding).
 
+## CLI
+
+Install globally to use from the command line:
+
+```bash
+npm install -g stegano-kit
+```
+
+```bash
+# Encode a message into an image
+stegano encode -i photo.png -m "Secret message" -o encoded.png
+
+# Decode a hidden message
+stegano decode -i encoded.png
+
+# Check image capacity
+stegano capacity -i photo.png
+
+# Detect hidden data in an image
+stegano detect -i suspicious.png
+
+# With encryption
+stegano encode -i photo.png -m "Top secret" -p mypassword -o encoded.png
+stegano decode -i encoded.png -p mypassword
+
+# Custom bits and channels
+stegano encode -i photo.png -m "More capacity" -b 2 -c r,g,b,a -o encoded.png
+```
+
+## Detection / Steganalysis
+
+Analyze images to check if they contain hidden steganographic data:
+
+```js
+import { detect } from 'stegano-kit';
+
+const result = detect(imageData);
+console.log(result);
+// {
+//   hasHiddenData: true,
+//   confidence: 0.99,
+//   method: 'lsb',
+//   details: 'stegano-kit magic header detected in LSB positions (RGB, 1 bit/channel)'
+// }
+```
+
+Uses two detection methods:
+- **Magic header scan** — checks for stegano-kit's signature in LSB positions across multiple channel configurations
+- **Chi-square analysis** — statistical test that detects non-random LSB distributions typical of embedded data
+
 ## Limitations
 
 - Input must be raw RGBA pixel data (`Uint8ClampedArray`). Use Canvas API in browsers, or a library like `sharp`/`jimp` in Node.js to get pixel buffers.
